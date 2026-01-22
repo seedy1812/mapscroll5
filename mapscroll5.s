@@ -16,7 +16,7 @@ WINDOW_WIDTH:		equ +(30+1)	; how may HW tiles high - * 2  for 16 pixel height ti
 WINDOW_HEIGHT:     	equ +(26+1)	; y HW tiles high * 2  for 16 pixel height tiles+ 1 extra
 HW_WIDTH:      		equ 40*2		; hw is 40 tiles *2 bytes
 
-MAP_CELL_PIXELS	 equ 128
+MAP_CELL_PIXELS	 equ 256
 
 MAP_CELL_NUMBER: equ (MAP_CELL_PIXELS/8)
 
@@ -36,7 +36,7 @@ MAX_MAP_X: equ MAP_WIDTH_PIXELS-WINDOW_PIXEL_WIDTH
 MAX_MAP_Y: equ MAP_HEIGHT_PIXELS-WINDOW_PIXEL_HEIGHT
 
 
-MAP_START_X		equ 128
+MAP_START_X		equ 0
 MAP_START_Y		equ 0
 
 
@@ -68,6 +68,11 @@ border macro
 		pop af
 		endm
 
+bordera macro
+        out ($fe),a
+		endm
+
+
 MY_BREAK	macro
         db $fd,00
 		endm
@@ -93,8 +98,6 @@ TILES_PAGE equ 5*2
 start:
 	ld sp , StackStart
 
-	call backdrop_start
-
 	call video_setup
 
 	call init_vbl
@@ -105,6 +108,40 @@ start:
 	Nextreg 6,a
 
 	nextreg 7,%11 ; 28mhz
+
+	call backdrop_start
+
+
+;	ld a,12
+;	ld ($4001),a
+
+	ld hl,$4000
+	ld b,32
+.part1:
+	ld a,(hl)
+	or a
+	jr nz ,.loop1
+	inc hl
+	djnz .part1
+	jr frame_loop
+.loop1
+	ld a,l
+	and 7
+	 out ($fe),a
+	 ld b,16
+.lo1 djnz .lo1 
+	ld a,l
+	add a,a
+	swapnib
+	and 7
+	 out ($fe),a 
+	 ld b,16
+.lo2 djnz .lo2 
+	ld a,7
+	 out ($fe),a 
+	 ld b,200
+.lo3 djnz .lo3 
+	jr .loop1
 
 
 frame_loop:
@@ -143,5 +180,5 @@ include "backdrop.s"
 
 THE_END:
 
- 	savenex "mapscroll5.nex",start
+ 	savenex "mapscroll5.nex",start,StackStart
 
